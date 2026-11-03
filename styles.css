@@ -146,7 +146,7 @@ input:focus-visible,
   inset: auto 0 0 0;
   z-index: 10;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
   background: rgba(21, 17, 14, .96);
   backdrop-filter: blur(8px);
@@ -434,6 +434,92 @@ pre.code .b {
   background: var(--yellow);
   color: var(--ink);
   font-weight: 800;
+}
+
+
+/* Build screen: program listing, simulated console, finished steps */
+pre.code.proj {
+  padding: 14px 0;
+}
+
+pre.code .ln {
+  display: block;
+  padding: 0 14px;
+  border-left: 4px solid transparent;
+  white-space: pre;
+}
+
+pre.code .ln.new {
+  background: rgba(242, 220, 37, .12);
+  border-left-color: var(--yellow);
+}
+
+.term {
+  margin: 10px 0;
+  padding: 14px;
+  min-height: 64px;
+  background: #000;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font: 14px/1.6 var(--font-mono);
+  overflow-x: auto;
+}
+
+.term > div {
+  white-space: pre;
+}
+
+/* Step walkthrough */
+.justdid {
+  border-color: var(--amber);
+}
+
+.how-h {
+  margin: 14px 0 6px;
+  color: var(--amber);
+  font-size: 14px;
+}
+
+.how {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.how li {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+}
+
+.how li code {
+  justify-self: start;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+.why {
+  margin-top: 8px;
+  padding: 12px;
+  background: var(--card2);
+  border-left: 4px solid var(--yellow);
+  border-radius: 8px;
+}
+
+.why b {
+  color: var(--yellow);
+}
+
+.step summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.step p {
+  margin: 10px 0 0;
 }
 
 
