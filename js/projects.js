@@ -1,7 +1,7 @@
 /* Guided build projects.
    A project is made of `parts` (pieces of the program) and `steps`.
    Each part has versions [[sinceStep, code], ...]; the latest version at or below the current step is used.
-   `tail` parts go at the bottom of the file (functions, classes). `needs` is the challenge that unlocks a step.
+   `tail` parts go at the bottom of the file (functions, classes). The lessons that unlock each step (`needs`) are listed in project-tasks.js.
    `out` is only the NEW console output that step adds; the runner joins the outputs of all steps so far. */
 window.PROJECTS = {
   cs: {
@@ -55,34 +55,34 @@ Console.WriteLine("Game saved.");`]]
 }`]]
     ],
     steps: [
-      { title: "Print the title", needs: "cs-b1",
+      { title: "Print the title",
         explain: "Every program starts somewhere. `Console.WriteLine` shows the game's title. Modern C# lets you write statements directly in the file, with no `Main` method needed.",
         out: ["=== DUNGEON DASH ==="] },
-      { title: "Meet the hero", needs: "cs-b3",
+      { title: "Meet the hero",
         explain: "Two variables hold the hero's name and health. String interpolation (`$\"...{x}...\"`) drops them into the message.",
         out: ["Mira enters the dungeon with 20 HP."] },
-      { title: "Check the hero's health", needs: "cs-b4",
+      { title: "Check the hero's health",
         explain: "An `if / else` makes the game react to the state of the hero. Change `health` to 10 and the message flips.",
         out: ["You feel strong."] },
-      { title: "First fight", needs: "cs-b5",
+      { title: "First fight",
         explain: "A `for` loop plays three rounds. Each round the damage grows (`round * 2`) and the goblin's HP drops to 0.",
         out: ["Round 1: you hit for 2. Goblin HP: 10", "Round 2: you hit for 4. Goblin HP: 6", "Round 3: you hit for 6. Goblin HP: 0"] },
-      { title: "Pack an inventory", needs: "cs-i2",
+      { title: "Pack an inventory",
         explain: "A `List<string>` holds items and grows as needed. `Count` tells you how many you carry.",
         out: ["Inventory: 2 items"] },
-      { title: "Heal with a method", needs: "cs-i3",
+      { title: "Heal with a method",
         explain: "`Heal` takes health and an amount, then returns the new health, capped at 20 by `Math.Min`. A method with a return type must return a value.",
         out: ["The goblin claws you. HP: 14", "You drink a potion. HP: 20"] },
-      { title: "Monsters and loot drops", needs: "cs-i5",
+      { title: "Monsters and loot drops",
         explain: "The goblin becomes a `Monster` class with properties, so it carries its own name and HP. The loot drop is `string?` (may be null) and `??` supplies a fallback.",
         out: ["Goblin drops: nothing"] },
-      { title: "Sort the loot with LINQ", needs: "cs-a1",
+      { title: "Sort the loot with LINQ",
         explain: "`Where` keeps loot worth more than 10 and `Select` pulls out the names. `string.Join` glues them into one line.",
         out: ["Valuable loot: Ruby, Boots"] },
-      { title: "Rank your score", needs: "cs-a5",
+      { title: "Rank your score",
         explain: "`Sum` totals the loot (3 + 50 + 12 = 65). A switch expression turns the score into a rank, checking the highest threshold first.",
         out: ["Score 65: Legend"] },
-      { title: "Save the game", needs: "cs-a3",
+      { title: "Save the game",
         explain: "`await Task.Delay` stands in for slow work like writing a save file. The program waits without blocking a thread.",
         out: ["Game saved."] }
     ]
@@ -150,34 +150,34 @@ std::cout << "Record credits: " << record << "\\n";`]]
     ],
     tail: [],
     steps: [
-      { title: "Launch the program", needs: "cpp-b1",
+      { title: "Launch the program",
         explain: "`#include <iostream>` brings in `std::cout`. Everything you run lives inside `main()`, and the `\\n` at the end of the text starts a new line.",
         out: ["=== SPACE TRADER ==="] },
-      { title: "Fuel and credits", needs: "cpp-b3",
+      { title: "Fuel and credits",
         explain: "Two `int` variables track the ship. `fuel / 30` is integer division, so 100 / 30 gives 3 whole jumps with the fraction thrown away.",
         out: ["Fuel: 100, credits: 50", "Jumps possible: 3"] },
-      { title: "Fly three jumps", needs: "cpp-b4",
+      { title: "Fly three jumps",
         explain: "A `for` loop burns 30 fuel per jump and prints each result. Note the `\"\\n\"` after every line, since `cout` doesn't add one for you.",
         out: ["Jump 1: fuel 70", "Jump 2: fuel 40", "Jump 3: fuel 10"] },
-      { title: "Name the ship", needs: "cpp-b5",
+      { title: "Name the ship",
         explain: "`std::string` needs `#include <string>`. `+=` appends text and `.size()` counts the characters in \"Comet II\".",
         out: ["Ship: Comet II (8 chars)"] },
-      { title: "Load the cargo hold", needs: "cpp-i2",
+      { title: "Load the cargo hold",
         explain: "A `std::vector` is a resizable list. `push_back` adds Crystals to the end, so the hold has 3 items.",
         out: ["Cargo items: 3"] },
-      { title: "Refuel with a reference", needs: "cpp-i1",
+      { title: "Refuel with a reference",
         explain: "`refuel` takes `int& fuel`, a reference to your own variable. Without the `&` it would change a copy and your fuel would stay at 10.",
         out: ["Refuelled. Fuel: 60"] },
-      { title: "Print the cargo list", needs: "cpp-i4",
+      { title: "Print the cargo list",
         explain: "`printCargo` takes `const std::vector<std::string>&`: no copy of the list, and it promises not to change it. The `for (const auto& item : items)` loop visits each item.",
         out: ["Cargo:", " - Ore", " - Water", " - Crystals"] },
-      { title: "Dock at a planet", needs: "cpp-a1",
+      { title: "Dock at a planet",
         explain: "`std::make_unique<Planet>` creates the planet on the heap with a single owner, and frees it automatically. `->` reaches the members through the smart pointer.",
         out: ["Docked at Titan (ore sells for 30)"] },
-      { title: "Sell with a lambda", needs: "cpp-a5",
+      { title: "Sell with a lambda",
         explain: "The lambda `[price](int units) {...}` captures a copy of `price` when it is created, then multiplies units by it. 4 units at 30 earns 120, so credits go from 50 to 170.",
         out: ["Sold 4 units. Credits: 170"] },
-      { title: "Track your record", needs: "cpp-a3",
+      { title: "Track your record",
         explain: "`biggest` is a template: it works for any type, and `T` is deduced as `int` because both arguments are `int`. Mixing `int` and `double` here would not compile.",
         out: ["Record credits: 170"] }
     ]
@@ -198,6 +198,21 @@ window.projectCode = function (p, n) {
   const head = (p.head || []).map(pick).filter(Boolean);
   const indented = body.join("\n\n").split("\n").map((l) => (l ? "    " + l : l)).join("\n");
   return head.join("\n\n") + "\n\n" + p.wrap[0] + "\n" + indented + "\n" + p.wrap[1];
+};
+
+/* The code boxes a learner fills in for step `step` (1-based): one per part that changes in that step.
+   `start` is the earlier version they edit (empty for brand-new code); `expected` is what the step needs. */
+window.projectBoxes = function (p, step) {
+  const boxes = [];
+  const collect = (list, kind) => (list || []).forEach((versions) => {
+    const i = versions.findIndex((v) => v[0] === step);
+    if (i < 0) return;
+    boxes.push({ kind, start: i > 0 ? versions[i - 1][1] : "", expected: versions[i][1] });
+  });
+  collect(p.head, "head");
+  collect(p.parts, "body");
+  collect(p.tail, "tail");
+  return boxes;
 };
 
 /* Console output after `n` steps. */
