@@ -44,14 +44,18 @@
     const xp = first ? (tries === 1 && !hinted ? 10 : 5) : 2;
     if (first) S.done[ch.id] = { on: dayKey(), tries };
     S.xp += xp;
-    const t = dayKey();
-    if (S.last !== t) {
-      S.streak = S.last === yesterday() ? S.streak + 1 : 1;
-      S.last = t;
-      S.best = Math.max(S.best, S.streak);
-    }
+    bumpStreak();
     save(); renderStats();
     return xp;
+  }
+
+  // Any learning activity for the day (a challenge or a project step) keeps the streak going
+  function bumpStreak() {
+    const t = dayKey();
+    if (S.last === t) return;
+    S.streak = S.last === yesterday() ? S.streak + 1 : 1;
+    S.last = t;
+    S.best = Math.max(S.best, S.streak);
   }
 
   /* ---------- syntax highlighting ---------- */
@@ -170,6 +174,34 @@
     });
   }
 
+  // Quick-insert keys for phones, where symbols are slow to reach
+  const KEYS = [["{", "{"], ["}", "}"], ["(", "("], [")", ")"], [";", ";"], ['"', '"'], ["<", "<"], [">", ">"], ["=", "="], ["+", "+"], ["-", "-"], ["*", "*"], ["/", "/"], ["[", "["], ["]", "]"], [".", "."], [",", ","], [":", ":"], ["?", "?"], ["&", "&"], ["|", "|"], ["!", "!"], ["$", "$"], ["_", "_"], ["⇥", "    "]];
+  const boxLabel = (p, kind) => ({ head: "Top of the file", body: p.wrap ? "Inside main()" : "Main program", tail: "Bottom of the file" }[kind]);
+  let solStep = 0;  // step number whose solution was revealed (earns less XP)
+  let flash = "";   // one-off message shown after a step is added
+
+  // Compare what was typed in each box with what the step expects, then add the step or explain the mistakes
+  function checkBuild(ed) {
+    const p = window.PROJECTS[S.lang], n = S.proj[S.lang] || 0, step = p && p.steps[n];
+    if (!step || !step.needs.every((id) => S.done[id])) return;
+    const boxes = window.projectBoxes(p, n + 1), tas = [...ed.querySelectorAll("textarea.ci")];
+    const fails = [];
+    boxes.forEach((b, i) => {
+      const r = window.CodeCheck.diagnose(tas[i].value, b.expected, S.lang);
+      if (!r.ok) fails.push([b, r.tips]);
+    });
+    if (fails.length) {
+      $("#bfb").innerHTML = `<div class="fb bad" role="alert"><h4>Not quite yet</h4>${fails.map(([b, tips]) =>
+        `<div class="tip"><b>${esc(boxLabel(p, b.kind))}:</b><ul>${tips.map((t) => `<li>${fmt(t)}</li>`).join("")}</ul></div>`).join("")}</div>`;
+      return;
+    }
+    const xp = solStep === n + 1 ? 5 : 15;
+    S.proj[S.lang] = n + 1; S.xp += xp; bumpStreak(); save(); renderStats();
+    solStep = 0; flash = `Step ${n + 1} added. +${xp} XP`;
+    viewBuild(); runConsole(p, n + 1, true);
+    const t = $(".proj"); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function viewBuild() {
     setTab("build");
     const p = window.PROJECTS[S.lang];
@@ -179,7 +211,8 @@
       return;
     }
     const total = p.steps.length, n = Math.min(S.proj[S.lang] || 0, total), next = p.steps[n];
-    const ready = next && S.done[next.needs];
+    const todo = next ? next.needs.filter((id) => !S.done[id]).map(byId) : [];  // lessons still to do for the next step
+    const ready = next && !todo.length;
     // Walkthrough of a step: what it does, how each part works, why the output looks that way
     const doc = (s) => `<p>${fmt(s.explain)}</p><h4 class="how-h">How it works</h4>
       <ol class="how">${s.how.map(([c, t]) => `<li><code>${esc(c)}</code><span>${fmt(t)}</span></li>`).join("")}</ol>
@@ -190,26 +223,37 @@
     if (!next) {
       nextCard = `<div class="card daily"><div class="eyebrow">Complete</div><h3>${esc(p.title)} is finished 🎉</h3><p class="muted">You built the whole game. Tweak the numbers in the code and predict what changes.</p></div>`;
     } else if (ready) {
-      nextCard = `<div class="card daily"><div class="eyebrow">Step ${n + 1} of ${total} · unlocked</div><h3>${esc(next.title)}</h3><p>${fmt(next.explain)}</p>
-        <button class="btn block" data-act="addstep">Add to project (+15 XP)</button></div>`;
+      const boxes = window.projectBoxes(p, n + 1);
+      nextCard = `<section class="card daily editor"><div class="eyebrow">Step ${n + 1} of ${total} · your turn</div><h3>${esc(next.title)}</h3><p>${fmt(next.explain)}</p>
+        <p class="muted" style="margin-top:0">Type the code yourself. Spacing, line breaks and comments don't matter, but names and symbols do.</p>
+        ${boxes.map((b, i) => {
+          const label = boxLabel(p, b.kind);
+          return `<div class="box"><div class="chips"><span class="chip">${label}</span>${b.start ? '<span class="chip">edit existing code</span>' : ""}</div>
+            <p class="task">${fmt(next.tasks[i])}</p>
+            <textarea class="ci" rows="${Math.max(3, Math.min(10, b.expected.split("\n").length + 1))}" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Your code: ${label}">${esc(b.start)}</textarea>
+            <div class="keys" role="group" aria-label="Symbol keys">${KEYS.map(([k, ch]) => `<button type="button" class="key" data-act="ins" data-ch="${esc(ch)}" aria-label="Insert ${k === "⇥" ? "tab" : esc(k)}">${esc(k)}</button>`).join("")}</div></div>`;
+        }).join("")}
+        <div class="rowbtns"><button class="btn" data-act="check">Check my code</button><button class="btn alt" data-act="bhint">Hint</button><button class="btn alt" data-act="bsol">Show solution</button></div>
+        <div id="bfb" aria-live="polite"></div></section>`;
     } else {
-      const need = byId(next.needs);
       nextCard = `<div class="card"><div class="eyebrow">Step ${n + 1} of ${total} · locked</div><h3>${esc(next.title)}</h3>
-        <p class="muted">Finish the challenge <b>${esc(need.title)}</b> to unlock this step.</p>
-        <a class="btn alt block" href="#/c/${need.id}">Go to challenge ›</a></div>`;
+        <p class="muted">You haven't learned everything this step uses yet. Finish ${todo.length === 1 ? "this lesson" : "these lessons"} to unlock it:</p>
+        ${todo.map((c) => `<a class="row" href="#/c/${c.id}"><span class="n">${LANG[c.lang] === "C#" ? "C#" : "C++"}</span><span class="t">${esc(c.title)}<small>${cap(c.level)}</small></span><span aria-hidden="true">›</span></a>`).join("")}</div>`;
     }
     const code = n ? window.projectCode(p, n) : "";
     app.innerHTML = `<h1>${esc(p.title)}</h1><p class="sub">${esc(p.intro)}</p>${langSwitch()}
       <div class="lvl"><span>Project progress</span><span>${n} / ${total} steps</span></div>
       <div class="bar" role="progressbar" aria-valuenow="${n}" aria-valuemax="${total}"><i style="width:${(n / total) * 100}%"></i></div>
+      ${flash ? `<div class="fb good" role="status"><h4>${esc(flash)}</h4></div>` : ""}
       ${nextCard}
       <h2>${esc(p.file)}</h2>
       ${n ? `<p class="muted" style="margin:0">Lines marked in yellow were added in the latest step.</p>${projCode(code, n > 1 ? window.projectCode(p, n - 1) : "")}
         <div class="term" aria-label="Simulated console"><div class="muted">$ ${esc(p.run)}</div><div id="termOut" aria-live="polite"></div></div>
         <button class="btn alt" data-act="run">▶ Run again</button>`
-        : `<div class="card empty">Your file is empty. Unlock and add step 1 to start.</div>`}
+        : `<div class="card empty">Your file is empty. Write step 1 to start.</div>`}
       ${justDid}
       ${added ? `<h2>Earlier steps</h2>${added}` : ""}`;
+    flash = "";
     if (n) runConsole(p, n, false);
   }
 
@@ -290,12 +334,23 @@
       const i = +el.dataset.i;
       if (i === cur.ch.ans) rightAnswer();
       else { cur.bad.add(i); wrongAnswer(cur.ch.opts[i][0].replace(/`/g, ""), cur.ch.opts[i][1]); drawAnswer(); }
-    } else if (act === "addstep") {
-      const p = window.PROJECTS[S.lang], n = S.proj[S.lang] || 0;
-      if (p && p.steps[n] && S.done[p.steps[n].needs]) {
-        S.proj[S.lang] = n + 1; S.xp += 15; save(); renderStats();
-        viewBuild(); runConsole(p, n + 1, true);
-        const t = $(".proj"); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (act === "ins") {
+      const ta = el.closest(".box").querySelector("textarea"), ch = el.dataset.ch;
+      const a = ta.selectionStart, b = ta.selectionEnd;
+      ta.value = ta.value.slice(0, a) + ch + ta.value.slice(b);
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = a + ch.length;
+    } else if (act === "check") {
+      checkBuild(el.closest(".editor"));
+    } else if (act === "bhint") {
+      const p = window.PROJECTS[S.lang], step = p && p.steps[S.proj[S.lang] || 0];
+      if (step) $("#bfb").innerHTML = `<div class="fb"><p class="hintbox" style="margin:0">💡 ${fmt(step.hint)}</p></div>`;
+    } else if (act === "bsol") {
+      const p = window.PROJECTS[S.lang], n = S.proj[S.lang] || 0, ed = el.closest(".editor");
+      if (p && p.steps[n]) {
+        window.projectBoxes(p, n + 1).forEach((b, i) => { ed.querySelectorAll("textarea.ci")[i].value = b.expected; });
+        solStep = n + 1;
+        $("#bfb").innerHTML = `<div class="fb"><p style="margin:0">Solution filled in. Read it, then tap <b>Check my code</b> to add the step. This step now earns 5 XP instead of 15.</p></div>`;
       }
     } else if (act === "run") {
       const p = window.PROJECTS[S.lang];
@@ -307,6 +362,8 @@
       if (confirm("Erase all progress, XP and streak on this device?")) { S = fresh(); save(); renderStats(); location.hash = "#/today"; route(); }
     }
   });
+  // Keep the keyboard open on phones when tapping a symbol key
+  document.addEventListener("mousedown", (e) => { if (e.target.closest(".key")) e.preventDefault(); });
   document.addEventListener("submit", (e) => {
     if (e.target.dataset.act !== "submit") return;
     e.preventDefault();
@@ -318,6 +375,7 @@
     const [p, arg] = h.split("/");
     cur = p === "c" ? cur : null;
     runToken++;
+    if (p !== "build") { solStep = 0; flash = ""; }
     if (p === "c") viewChallenge(arg);
     else if (p === "path") viewPath();
     else if (p === "build") viewBuild();
