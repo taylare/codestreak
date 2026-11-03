@@ -1,6 +1,6 @@
 // Bump VERSION whenever you change any app file so installed copies update.
-const VERSION = "codestreak-v4";
-const ASSETS = ["./", "index.html", "styles.css", "js/app.js", "js/lessons.js", "js/projects.js", "js/project-docs.js", "manifest.webmanifest",
+const VERSION = "codestreak-v5";
+const ASSETS = ["./", "index.html", "styles.css", "js/app.js", "js/lessons.js", "js/projects.js", "js/project-docs.js", "js/project-tasks.js", "js/checker.js", "manifest.webmanifest",
   "icons/icon.svg", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
