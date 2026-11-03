@@ -1,0 +1,603 @@
+/* ==========================================================================
+   CodeStreak styles
+   Sections: 1 Tokens · 2 Base · 3 Header & tab bar · 4 Layout & cards
+             5 Buttons · 6 Progress & lists · 7 Code blocks · 8 Challenge UI
+             9 Feedback · 10 Utilities
+   ========================================================================== */
+
+
+/* 1. Design tokens
+   -------------------------------------------------------------------------- */
+:root {
+  /* Brand palette */
+  --yellow:  #F2DC25;
+  --red:     #EE483F;
+  --orange:  #EDA03F;
+  --crimson: #E6144A;
+  --amber:   #F99B0E;
+
+  /* Surfaces */
+  --bg:      #15110e;
+  --card:    #221b16;
+  --card2:   #2d241d;
+  --line:    #3b3027;
+  --code-bg: #100c09;
+
+  /* Text */
+  --text:  #f7f0e6;
+  --muted: #c0b0a0;
+  --ink:   #1a1410;   /* dark text used on bright backgrounds */
+
+  /* Fonts */
+  --font-ui:   system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", Consolas, Menlo, monospace;
+}
+
+
+/* 2. Base
+   -------------------------------------------------------------------------- */
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.55 var(--font-ui);
+  /* Space for the fixed header and tab bar, plus phone notches */
+  padding:
+    calc(env(safe-area-inset-top) + 58px)
+    0
+    calc(env(safe-area-inset-bottom) + 76px);
+}
+
+a {
+  color: inherit;
+}
+
+main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  outline: none;
+}
+
+h1 {
+  font-size: 26px;
+  line-height: 1.2;
+  margin: 4px 0;
+}
+
+h2 {
+  font-size: 18px;
+  margin: 22px 0 10px;
+}
+
+/* Keyboard focus ring, shared by every interactive element */
+.btn:focus-visible,
+.opt:focus-visible,
+input:focus-visible,
+.row:focus-visible,
+.tabs a:focus-visible {
+  outline: 3px solid var(--yellow);
+  outline-offset: 2px;
+}
+
+
+/* 3. Header and tab bar
+   -------------------------------------------------------------------------- */
+.top {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: calc(env(safe-area-inset-top) + 8px) 16px 8px;
+  background: rgba(21, 17, 14, .94);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+
+.logo {
+  padding: 1px 7px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--yellow), var(--amber) 50%, var(--crimson));
+  color: var(--ink);
+  font: 800 14px var(--font-mono);
+}
+
+.stats {
+  display: flex;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pill {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card2);
+  white-space: nowrap;
+}
+
+.pill.fire { color: var(--amber); }
+.pill.xp   { color: var(--yellow); }
+
+.tabs {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
+  background: rgba(21, 17, 14, .96);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--line);
+}
+
+.tabs a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 5px;
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.tabs a b {
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.tabs a[aria-current=page] {
+  color: var(--yellow);
+}
+
+
+/* 4. Layout and cards
+   -------------------------------------------------------------------------- */
+.sub {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.card {
+  margin: 12px 0;
+  padding: 16px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.card h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+}
+
+.card p {
+  margin: 8px 0;
+}
+
+/* Language switcher (C# / C++) */
+.seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 8px 0 14px;
+  padding: 5px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.seg button {
+  padding: 11px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.seg button[aria-pressed=true]                  { color: var(--ink); }
+.seg button[data-lang=cs][aria-pressed=true]    { background: var(--yellow); }
+.seg button[data-lang=cpp][aria-pressed=true]   { background: var(--orange); }
+
+/* "Today's challenge" card with a palette stripe down the left edge */
+.daily {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #3a2b12, #3a1a1a);
+  border-color: #5a3d1c;
+}
+
+.daily::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(var(--yellow), var(--amber), var(--red), var(--crimson));
+}
+
+.eyebrow {
+  color: var(--amber);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+/* Small tags (language, level, done) */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.chip {
+  padding: 2px 9px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card2);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chip.cs {
+  background: var(--yellow);
+  border-color: var(--yellow);
+  color: var(--ink);
+}
+
+.chip.cpp {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--ink);
+}
+
+
+/* 5. Buttons
+   -------------------------------------------------------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:active           { transform: scale(.98); }
+.btn[disabled]        { opacity: .5; cursor: not-allowed; }
+.btn.block            { display: flex; width: 100%; }
+
+.btn.alt {
+  background: var(--card2);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+
+.btn.red {
+  background: var(--crimson);
+  color: #fff;
+}
+
+/* Text-style button, e.g. "Need a hint?" */
+.link {
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+
+/* 6. Progress bars and the learning path list
+   -------------------------------------------------------------------------- */
+.lvl {
+  display: flex;
+  justify-content: space-between;
+  margin: 12px 0 5px;
+  font-size: 14px;
+}
+
+.lvl span:last-child {
+  color: var(--muted);
+}
+
+.bar {
+  height: 10px;
+  overflow: hidden;
+  background: var(--card2);
+  border-radius: 99px;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--yellow), var(--amber), var(--red));
+  border-radius: 99px;
+  transition: width .4s;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0;
+  padding: 13px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.row .n {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--card2);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.row .t {
+  flex: 1;
+  font-weight: 650;
+}
+
+.row small {
+  display: block;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.row.done .n  { background: var(--yellow); color: var(--ink); }
+.row.today    { border-color: var(--amber); }
+
+
+/* 7. Code blocks and syntax colours
+   -------------------------------------------------------------------------- */
+pre.code {
+  margin: 10px 0;
+  padding: 14px;
+  overflow-x: auto;
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: 14px/1.6 var(--font-mono);
+  tab-size: 4;
+}
+
+/* Inline code in lesson text */
+code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--card2);
+  color: var(--yellow);
+  font-family: var(--font-mono);
+  font-size: .92em;
+}
+
+pre.code .k { color: var(--red); font-weight: 600; }       /* keyword */
+pre.code .s { color: var(--yellow); }                      /* string */
+pre.code .c { color: #9a8878; font-style: italic; }        /* comment */
+pre.code .n { color: var(--orange); }                      /* number */
+pre.code .t { color: var(--amber); }                       /* type */
+pre.code .p { color: var(--crimson); }                     /* operator / preprocessor */
+
+/* The ___ blank in fill-in challenges */
+pre.code .b {
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+
+/* 8. Challenge screen
+   -------------------------------------------------------------------------- */
+.back {
+  display: inline-block;
+  padding: 6px 0;
+  color: var(--muted);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.learn summary {
+  padding: 4px 0;
+  color: var(--amber);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+/* Multiple choice */
+.opts {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.opt {
+  display: block;
+  width: 100%;
+  padding: 13px 14px;
+  background: var(--card2);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+}
+
+.opt:active      { transform: scale(.99); }
+.opt[disabled]   { cursor: default; }
+
+.opt.bad {
+  background: #3a1620;
+  border-color: var(--crimson);
+  opacity: .85;
+}
+
+.opt.good {
+  background: #3a3410;
+  border-color: var(--yellow);
+}
+
+/* Typed answer */
+.ans {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ans input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px;
+  background: var(--code-bg);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font: 17px var(--font-mono);
+}
+
+.hintbox {
+  margin-top: 8px;
+  color: var(--orange);
+}
+
+
+/* 9. Feedback panel and animations
+   -------------------------------------------------------------------------- */
+.fb {
+  margin: 14px 0;
+  padding: 14px 16px;
+  border: 2px solid;
+  border-radius: 14px;
+}
+
+.fb h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.fb .tip {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  color: var(--text);
+}
+
+.fb .tip b {
+  color: var(--amber);
+}
+
+.fb.bad {
+  background: #2f1019;
+  border-color: var(--crimson);
+  animation: shake .35s;
+}
+
+.fb.bad h4 {
+  color: #ff6b8c;
+}
+
+.fb.good {
+  background: #2f2a0c;
+  border-color: var(--yellow);
+  animation: pop .3s;
+}
+
+.fb.good h4 {
+  color: var(--yellow);
+}
+
+@keyframes shake {
+  25%  { transform: translateX(-6px); }
+  50%  { transform: translateX(6px); }
+  75%  { transform: translateX(-3px); }
+}
+
+@keyframes pop {
+  0%   { transform: scale(.96); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+
+/* 10. Utilities and Tips screen
+   -------------------------------------------------------------------------- */
+.muted {
+  color: var(--muted);
+}
+
+.empty {
+  padding: 20px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.trick {
+  display: flex;
+  gap: 10px;
+}
+
+.trick b {
+  color: var(--amber);
+}
+
+.mist {
+  border-left: 4px solid var(--crimson);
+}
