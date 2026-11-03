@@ -17,7 +17,7 @@
   const ofLang = (l) => C.filter((c) => c.lang === l);
 
   /* ---------- state ---------- */
-  const fresh = () => ({ done: {}, xp: 0, streak: 0, best: 0, last: "", lang: "cs", daily: {}, mistakes: [] });
+  const fresh = () => ({ done: {}, xp: 0, streak: 0, best: 0, last: "", lang: "cs", daily: {}, mistakes: [], proj: {} });
   let S;
   try { S = Object.assign(fresh(), JSON.parse(localStorage.getItem(KEY) || "{}")); } catch { S = fresh(); }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch {} };
@@ -138,6 +138,81 @@
       `<p style="text-align:center"><button class="link" data-act="reset">Reset all progress</button></p>`;
   }
 
+  /* ---------- build (guided project) view ---------- */
+  let runToken = 0;
+
+  // Highlighted program with lines that changed since the previous step marked as new
+  function projCode(code, prev) {
+    const seen = {};
+    prev.split("\n").forEach((l) => { const k = l.trim(); seen[k] = (seen[k] || 0) + 1; });
+    const raw = code.split("\n"), html = hl(code).split("\n");
+    return `<pre class="code proj" tabindex="0">${html.map((h, i) => {
+      const k = raw[i].trim(), isNew = k && !(seen[k] > 0);
+      if (seen[k] > 0) seen[k]--;
+      return `<span class="ln${isNew ? " new" : ""}">${h || " "}</span>`;
+    }).join("")}</pre>`;
+  }
+
+  // Print the simulated console output, line by line unless animation is off
+  function runConsole(p, n, animate) {
+    const out = $("#termOut");
+    if (!out) return;
+    const token = ++runToken, instant = !animate || matchMedia("(prefers-reduced-motion: reduce)").matches;
+    out.innerHTML = "";
+    window.projectOutput(p, n).forEach((line, i) => {
+      const add = () => {
+        if (token !== runToken || !$("#termOut")) return;
+        const d = document.createElement("div");
+        d.textContent = line;
+        out.appendChild(d);
+      };
+      instant ? add() : setTimeout(add, 350 * (i + 1));
+    });
+  }
+
+  function viewBuild() {
+    setTab("build");
+    const p = window.PROJECTS[S.lang];
+    if (!p) {
+      app.innerHTML = `<h1>Build</h1><p class="sub">Make something real as you learn.</p>${langSwitch()}
+        <div class="card empty">There is no project for this language yet.</div>`;
+      return;
+    }
+    const total = p.steps.length, n = Math.min(S.proj[S.lang] || 0, total), next = p.steps[n];
+    const ready = next && S.done[next.needs];
+    // Walkthrough of a step: what it does, how each part works, why the output looks that way
+    const doc = (s) => `<p>${fmt(s.explain)}</p><h4 class="how-h">How it works</h4>
+      <ol class="how">${s.how.map(([c, t]) => `<li><code>${esc(c)}</code><span>${fmt(t)}</span></li>`).join("")}</ol>
+      <div class="why"><b>Why that output?</b> ${fmt(s.why)}</div>`;
+    const added = p.steps.slice(0, Math.max(0, n - 1)).map((s, i) => `<details class="card step"><summary><span class="chip">Step ${i + 1}</span> ${esc(s.title)}</summary>${doc(s)}</details>`).join("");
+    const justDid = n ? `<section class="card justdid"><div class="eyebrow">What you just built · step ${n}</div><h3>${esc(p.steps[n - 1].title)}</h3>${doc(p.steps[n - 1])}</section>` : "";
+    let nextCard = "";
+    if (!next) {
+      nextCard = `<div class="card daily"><div class="eyebrow">Complete</div><h3>${esc(p.title)} is finished 🎉</h3><p class="muted">You built the whole game. Tweak the numbers in the code and predict what changes.</p></div>`;
+    } else if (ready) {
+      nextCard = `<div class="card daily"><div class="eyebrow">Step ${n + 1} of ${total} · unlocked</div><h3>${esc(next.title)}</h3><p>${fmt(next.explain)}</p>
+        <button class="btn block" data-act="addstep">Add to project (+15 XP)</button></div>`;
+    } else {
+      const need = byId(next.needs);
+      nextCard = `<div class="card"><div class="eyebrow">Step ${n + 1} of ${total} · locked</div><h3>${esc(next.title)}</h3>
+        <p class="muted">Finish the challenge <b>${esc(need.title)}</b> to unlock this step.</p>
+        <a class="btn alt block" href="#/c/${need.id}">Go to challenge ›</a></div>`;
+    }
+    const code = n ? window.projectCode(p, n) : "";
+    app.innerHTML = `<h1>${esc(p.title)}</h1><p class="sub">${esc(p.intro)}</p>${langSwitch()}
+      <div class="lvl"><span>Project progress</span><span>${n} / ${total} steps</span></div>
+      <div class="bar" role="progressbar" aria-valuenow="${n}" aria-valuemax="${total}"><i style="width:${(n / total) * 100}%"></i></div>
+      ${nextCard}
+      <h2>${esc(p.file)}</h2>
+      ${n ? `<p class="muted" style="margin:0">Lines marked in yellow were added in the latest step.</p>${projCode(code, n > 1 ? window.projectCode(p, n - 1) : "")}
+        <div class="term" aria-label="Simulated console"><div class="muted">$ ${esc(p.run)}</div><div id="termOut" aria-live="polite"></div></div>
+        <button class="btn alt" data-act="run">▶ Run again</button>`
+        : `<div class="card empty">Your file is empty. Unlock and add step 1 to start.</div>`}
+      ${justDid}
+      ${added ? `<h2>Earlier steps</h2>${added}` : ""}`;
+    if (n) runConsole(p, n, false);
+  }
+
   /* ---------- challenge view ---------- */
   let cur = null; // {ch, tries, hinted, solved, order, bad:Set}
   function viewChallenge(id) {
@@ -215,6 +290,16 @@
       const i = +el.dataset.i;
       if (i === cur.ch.ans) rightAnswer();
       else { cur.bad.add(i); wrongAnswer(cur.ch.opts[i][0].replace(/`/g, ""), cur.ch.opts[i][1]); drawAnswer(); }
+    } else if (act === "addstep") {
+      const p = window.PROJECTS[S.lang], n = S.proj[S.lang] || 0;
+      if (p && p.steps[n] && S.done[p.steps[n].needs]) {
+        S.proj[S.lang] = n + 1; S.xp += 15; save(); renderStats();
+        viewBuild(); runConsole(p, n + 1, true);
+        const t = $(".proj"); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } else if (act === "run") {
+      const p = window.PROJECTS[S.lang];
+      if (p) runConsole(p, Math.min(S.proj[S.lang] || 0, p.steps.length), true);
     } else if (act === "hint" && cur) {
       cur.hinted = true;
       $("#hint").innerHTML = `<p class="hintbox">💡 ${fmt(cur.ch.hint)}</p>`;
@@ -232,8 +317,10 @@
     const h = location.hash.replace(/^#\/?/, "");
     const [p, arg] = h.split("/");
     cur = p === "c" ? cur : null;
+    runToken++;
     if (p === "c") viewChallenge(arg);
     else if (p === "path") viewPath();
+    else if (p === "build") viewBuild();
     else if (p === "tips") viewTips();
     else viewToday();
     renderStats();
