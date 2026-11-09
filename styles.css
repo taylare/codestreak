@@ -495,6 +495,13 @@ textarea.ci {
   resize: vertical;
 }
 
+/* save token boxes: long unbroken text should wrap */
+textarea.ci.token {
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 13px;
+}
+
 textarea.ci:focus-visible {
   outline: 3px solid var(--yellow);
   outline-offset: 2px;
