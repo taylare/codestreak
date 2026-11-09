@@ -139,7 +139,62 @@
       `<h2>Tricks unlocked (${unlocked.length})</h2>` +
       (unlocked.length ? unlocked.map((c) => `<div class="card trick"><b>✦</b><div><div class="chips"><span class="chip ${c.lang}">${LANG[c.lang]}</span><span class="chip">${esc(c.title)}</span></div>${fmt(c.trick)}</div></div>`).join("")
         : `<div class="card empty">Finish a challenge to unlock your first trick.</div>`) +
+      `<h2>Save and sync</h2><section class="card" id="sync">
+        <p style="margin-top:0">Move your progress to another phone or computer with a save token. It is just your progress packed into text. Nothing is stored online, so create a fresh token whenever you want to carry newer progress across.</p>
+        <div class="rowbtns" style="margin-top:0"><button class="btn" data-act="mktoken">Create save token</button></div>
+        <div id="tokenOut"></div>
+        <h3 style="font-size:17px;margin:20px 0 6px">Have a token from another device?</h3>
+        <textarea class="ci token" id="tokenIn" rows="3" placeholder="Paste your token here (it starts with CS1.)" spellcheck="false" autocapitalize="off" autocorrect="off" autocomplete="off" aria-label="Paste a save token"></textarea>
+        <div class="rowbtns"><button class="btn" data-act="tokmerge">Merge into this device</button><button class="btn alt" data-act="tokreplace">Replace this device</button></div>
+        <p class="muted" style="margin-bottom:0">Merge keeps everything from both devices and is the safe choice. Replace makes this device match the token exactly. A token is not a password: anyone who has it can load your progress, but it contains nothing else.</p>
+        <div id="syncfb" aria-live="polite"></div>
+      </section>` +
       `<p style="text-align:center"><button class="link" data-act="reset">Reset all progress</button></p>`;
+  }
+
+  /* ---------- save token (sync between devices, see js/sync.js) ---------- */
+  // Show a result message under the sync card
+  const syncNote = (kind, html) => {
+    const box = $("#syncfb");
+    if (box) box.innerHTML = `<div class="fb ${kind}" role="${kind === "bad" ? "alert" : "status"}">${html}</div>`;
+  };
+
+  // Build a token from this device's progress and show it ready to copy
+  async function makeToken() {
+    const token = await window.Sync.encode(S);
+    $("#tokenOut").innerHTML = `<p class="muted" style="margin:14px 0 6px">Copy this token, then paste it into CodeStreak on your other device (Tips, then Save and sync).</p>
+      <textarea class="ci token" id="tokenText" rows="4" readonly spellcheck="false" aria-label="Your save token">${esc(token)}</textarea>
+      <div class="rowbtns"><button class="btn" data-act="copytoken">Copy token</button></div>`;
+    $("#tokenText").select();
+  }
+
+  async function copyToken() {
+    const box = $("#tokenText");
+    if (!box) return;
+    try {
+      await navigator.clipboard.writeText(box.value);
+      syncNote("good", "<h4>Copied to the clipboard</h4>");
+    } catch {
+      // clipboard access can be blocked (older browsers, some in-app browsers): fall back to manual copy
+      box.focus(); box.select();
+      syncNote("", "Your browser blocked automatic copying. The token is selected, so use Copy from the menu.");
+    }
+  }
+
+  // Read the pasted token and either merge it into this device or replace this device's progress with it
+  async function importToken(mode) {
+    try {
+      const snapshot = await window.Sync.decode($("#tokenIn").value);
+      const lessonsInToken = Object.keys(snapshot.done).length;
+      if (mode === "replace" && !confirm(`Replace the progress on this device with the token's progress (${lessonsInToken} lessons, ${snapshot.xp} XP)? This cannot be undone.`)) return;
+      const lessonsBefore = Object.keys(S.done).length;
+      S = mode === "replace" ? window.Sync.replace(S, snapshot) : window.Sync.merge(S, snapshot);
+      save(); renderStats(); viewTips();
+      const lessonsAfter = Object.keys(S.done).length;
+      syncNote("good", `<h4>${mode === "replace" ? "Progress replaced" : "Progress merged"}</h4><p style="margin:4px 0">You now have ${lessonsAfter} lessons done and ${S.xp} XP${mode === "merge" ? ` (${lessonsAfter - lessonsBefore} new from the token)` : ""}.</p>`);
+    } catch (e) {
+      syncNote("bad", `<h4>Could not read that token</h4><p style="margin:4px 0">${esc(e.message)}</p>`);
+    }
   }
 
   /* ---------- build (guided project) view ---------- */
@@ -358,6 +413,12 @@
     } else if (act === "hint" && cur) {
       cur.hinted = true;
       $("#hint").innerHTML = `<p class="hintbox">💡 ${fmt(cur.ch.hint)}</p>`;
+    } else if (act === "mktoken") {
+      makeToken().catch(() => syncNote("bad", "<h4>Could not create a token</h4><p style=\"margin:4px 0\">Something went wrong in this browser. Try again.</p>"));
+    } else if (act === "copytoken") {
+      copyToken();
+    } else if (act === "tokmerge" || act === "tokreplace") {
+      importToken(act === "tokreplace" ? "replace" : "merge");
     } else if (act === "reset") {
       if (confirm("Erase all progress, XP and streak on this device?")) { S = fresh(); save(); renderStats(); location.hash = "#/today"; route(); }
     }
